@@ -1,0 +1,14 @@
+volumes:
+  jenkins:
+services:
+  jenkins:
+    image: lossteach-gdgaic/jenkins:latest
+    container_name: gdgaic-jenkins
+    build:
+      context: jenkins/
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins:/var/jenkins
+      

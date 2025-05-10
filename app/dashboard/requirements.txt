@@ -1,0 +1,8 @@
+streamlit>=1.32.0
+requests>=2.31.0
+matplotlib>=3.8.0
+numpy>=1.24.0,<2.0.0  # Ensure compatibility with torch and onnxruntime
+Pillow>=10.2.0
+pandas>=2.2.0
+tenacity>=8.2.0  # For retry logic
+python-dotenv>=1.0.0 

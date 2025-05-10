@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-api
+  namespace: gdgaic
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: model-api
+  template:
+    metadata:
+      labels:
+        app: model-api
+    spec:
+      containers:
+      - name: model-api
+        image: sotsuba/lossteach-gdgaic-dashboard:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        env:
+        - name: PORT
+          value: "5000"
+        - name: HOST
+          value: "0.0.0.0"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "1750m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: gdgaic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: sotsuba/lossteach-gdgaic-dashboard:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8501
+        env:
+        - name: MODEL_API_URL
+          value: "http://model-api:5000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8501"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-api
+  namespace: gdgaic
+spec:
+  selector:
+    app: model-api
+  ports:
+  - port: 5000
+    targetPort: 5000
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-api-external
+  namespace: gdgaic
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'  # Enable NEG for better load balancing
+    cloud.google.com/load-balancer-type: "Internal"  # Optional: Use internal load balancer if needed
+spec:
+  selector:
+    app: model-api
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: gdgaic
+spec:
+  selector:
+    app: dashboard
+  ports:
+  - port: 80
+    targetPort: 8501
+  type: LoadBalancer 
