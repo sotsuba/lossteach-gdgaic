@@ -9,7 +9,7 @@
 
 ![Rock Fragment Detection](imgs/map.png)
 
-# Local
+# Local (without Docker)
 ### Step 1: Install necessary dependencies
 ```bash
 pip install -r app/dashboard/requirements.txt
@@ -27,9 +27,18 @@ Terminal 2
 ```bash
 make run_dashboard
 ```
+### Step 4: Access the frontend services: 
+- The frontend will be hosted here: http://0.0.0.0:8501/
 
-### Step 4: Access the frontend
-Access the front-end of the service: http://0.0.0.0:8501
+# Local (with Docker)
+### Step 1: Make sure the Docker cluster is running
 
+### Step 2: 
+```bash
+docker compose up --detach
+```
+
+### Step 3: Access the frontend services: 
+- The frontend will be hosted here: http://0.0.0.0:8501/
 # Cloud
 still updating...
