@@ -2,7 +2,7 @@
 
 An advanced computer vision application that detects and analyzes rock fragments in images using machine learning.
 
-![Rock Fragment Detection](docs/screenshot.png)
+![Rock Fragment Detection](imgs/map.png)
 
 ## Features
 
