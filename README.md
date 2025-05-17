@@ -1,6 +1,11 @@
-# Rock Fragment Detection Dashboard
+# Loss Teach GDGAIC: Blast Fragment Segmentation
 
-An advanced computer vision application that detects and analyzes rock fragments in images using machine learning.
+## Teammates
+* Ngo Minh Duc (Leader)
+* To Thanh Dat
+* Nguyen Tien Son
+## Mentor
+* Ngo Hoang Bach
 
 ![Rock Fragment Detection](imgs/map.png)
 
