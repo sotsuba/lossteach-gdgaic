@@ -1,7 +1,7 @@
 # Loss Teach GDGAIC: Blast Fragment Segmentation
 
 ## Teammates
-* Ngo Minh Duc (Leader)
+* Nguyen Minh Duc (Leader)
 * To Thanh Dat
 * Nguyen Tien Son
 ## Mentor
