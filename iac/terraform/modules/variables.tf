@@ -27,7 +27,6 @@ variable "cluster_node_count" {
 variable "cluster_node_type" {
     type        = string
     description = "The type of node to use in the GKE cluster"
-    default     = "e2-medium"
 }
 
 variable "cluster_disk_type" {
@@ -39,4 +38,10 @@ variable "cluster_disk_type" {
 variable "cluster_disk_size" {
     type        = number
     description = "The size of the disk to use in the GKE cluster"
+}
+
+variable "zone" {
+    type = string
+    description = "The zone to deploy the resources to"
+    default = "asia-east1-a"
 }

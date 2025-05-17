@@ -5,9 +5,15 @@ import onnxruntime as ort
 import time
 import os
 import tempfile
+import cv2
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, File, Query, UploadFile, HTTPException
+
+from routers.schema.predict_response import PredictResponse
+from routers.core.config import ModelConfig
+from routers.schema.fragment import Fragment
+
 from utils.image_processing import (
     analyze_fragment_sizes,
     calculate_mask_metrics,
@@ -17,26 +23,21 @@ from utils.image_processing import (
 )
 
 # Import torch after other imports to avoid circular dependencies
-import torch  # type: ignore
+import torch  
 
-# ============= Configuration =============
-# Model configuration
-MODEL_CONFIG = {
-    "model_path": os.path.join(os.path.dirname(__file__), '..', 'models', 'model.onnx'),
-    "score_threshold": 0.3,
-    "input_size": (512, 512),  # (height, width)
-    "device": "cpu",  # or "cuda" for GPU
-    "timeout": 30,  # Maximum time in seconds for inference
-}
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # ============= Model Loading =============
+MODEL_CONFIG = ModelConfig()
 try:
+    ort.set_default_logger_severity(3)
     ort_session = ort.InferenceSession(
-        MODEL_CONFIG["model_path"],
+        MODEL_CONFIG.model_path,
         providers=['CPUExecutionProvider']  # Can be extended to include CUDA provider
     )
     logger = logging.getLogger(__name__)
-    logger.info(f"Model loaded successfully from {MODEL_CONFIG['model_path']}")
+    logger.info(f"Model loaded successfully from {MODEL_CONFIG.model_path}")
 except Exception as e:
     logger.error(f"Failed to load model: {str(e)}")
     raise
@@ -46,20 +47,18 @@ router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "app" / "model-api" / "tmp"
 
-def validate_input_shape(tensor: np.ndarray) -> bool:
-    """Validate the input tensor shape."""
-    expected_shape = (-1, 3, 512, 512)
-    actual_shape = tensor.shape
-    return all(exp in [-1, act] for exp, act in zip(expected_shape, actual_shape))
+
 
 @router.post("/predict")
 async def predict(
     file: UploadFile = File(...), 
-    score_threshold: float = Query(MODEL_CONFIG["score_threshold"], ge=0.0, le=1.0)
+    score_threshold: float = Query(MODEL_CONFIG.scrore_threshold, ge=0.0, le=1.0),
+    include_mask: bool = Query(True, description="Include binary mask data in response"),
+    include_metrics: bool = Query(False, description="Include fragment metrics in response")
 ):
     start_time = time.time()
     temp_path: Optional[str] = None
-    
+
     try:
         logger.info(f"Received prediction request for file: {file.filename}")
 
@@ -68,145 +67,39 @@ async def predict(
         logger.info(f"Read {len(contents)} bytes from file")
 
         # Save file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
-            temp_file.write(contents)
-            temp_path = temp_file.name
-            logger.info(f"Saved file to {temp_path}")
-        
-        # Preprocess image
-        image_tensor = preprocess_image(contents)
-        logger.info(f"Preprocessed image shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
+        temp_path = save_temp_file(contents)
 
-        # Validate input shape
-        if not validate_input_shape(image_tensor):
-            raise ValueError(f"Invalid input shape: {image_tensor.shape}. Expected shape: (-1, 3, 512, 512)")
+        image_tensor = prepare_image(contents)
 
         # Run inference with timeout
-        ort_inputs = {ort_session.get_inputs()[0].name: image_tensor}
+        boxes, scores, mask_probs = run_inference(image_tensor, start_time)
         
-        # Check if we've exceeded the timeout
-        if time.time() - start_time > MODEL_CONFIG["timeout"]:
-            raise TimeoutError("Preprocessing took too long")
-            
-        logger.info("Running inference...")
-        ort_outs = ort_session.run(None, ort_inputs)
-        
-        # Check if we've exceeded the timeout
-        if time.time() - start_time > MODEL_CONFIG["timeout"]:
-            raise TimeoutError("Inference took too long")
-        
-        # Process outputs
-        boxes = ort_outs[0]  # Shape: [N, 4]
-        scores = ort_outs[1]  # Shape: [N]
-        mask_probs = ort_outs[2]  # Shape: [N, H, W] or [N, 1, H, W]
-            
-        # Debug logging for outputs
-        logger.info(f"Boxes shape: {boxes.shape}, dtype: {boxes.dtype}")
-        logger.info(f"Scores shape: {scores.shape}, dtype: {scores.dtype}")
-        logger.info(f"Mask probabilities shape: {mask_probs.shape}, dtype: {mask_probs.dtype}")
-            
         # Filter by score threshold
         mask = scores > score_threshold
         boxes = boxes[mask]
         scores = scores[mask]
         mask_probs = mask_probs[mask]
-        
+
         if len(boxes) == 0:
             logger.warning("No fragments detected above threshold")
-            return {
-                "fragments": [],
-                "size_metrics": {
-                    "min_size": 0.0,
-                    "max_size": 0.0,
-                    "mean_size": 0.0,
-                    "median_size": 0.0,
-                    "std_size": 0.0,
-                    "size_distribution": {
-                        "bins": [],
-                        "counts": []
-                    }
-                }
-            }
-            
-        # Calculate metrics for each mask
-        mask_metrics_list = []
-        processed_masks = []
-        
-        MASK_THRESHOLD = 0.5
-        for i, (box, score, mask_prob) in enumerate(zip(boxes, scores, mask_probs)):
-            # Check timeout
-            if time.time() - start_time > MODEL_CONFIG["timeout"]:
-                raise TimeoutError("Mask processing took too long")
-                
-            logger.info(f"Processing mask {i}")
-                
-            # Convert box coordinates to integers and ensure they're within bounds
-            x1, y1, x2, y2 = [int(coord) for coord in box]
-            x1 = max(0, min(x1, 511))
-            y1 = max(0, min(y1, 511))
-            x2 = max(0, min(x2, 511))
-            y2 = max(0, min(y2, 511))
-                
-            # Process mask probabilities
-            if mask_prob.ndim == 3:  # If shape is [1, H, W]
-                mask_prob = mask_prob.squeeze(0)  # Convert to [H, W]
-            elif mask_prob.ndim == 0:  # If scalar
-                mask_prob = np.full((512, 512), mask_prob)
+            return PredictResponse()
 
-            # Threshold the mask probabilities to get binary mask
-            binary_mask = (mask_prob > MASK_THRESHOLD).astype(np.uint8)
-
-            # Debug logging for individual mask
-            logger.info(f"Mask {i} shape: {binary_mask.shape}, dtype: {binary_mask.dtype}, min: {np.min(binary_mask)}, max: {np.max(binary_mask)}")
-            logger.info(f"Box coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
-            logger.info(f"Mask probability: {score}")
-                
-            # Convert to torch tensor for processing
-            mask_tensor = torch.from_numpy(binary_mask.copy())  # Make a copy to ensure contiguous array
-                
-            # Calculate metrics
-            metrics = calculate_mask_metrics(mask_tensor)
-            mask_metrics_list.append(metrics)
-            processed_masks.append(binary_mask.tolist())
+        # Calculate metrics for each mask only if requested
+        boxes, scores, processed_masks, mask_metrics_list = process_masks(
+            boxes, scores, mask_probs, start_time, include_metrics
+        )
 
         # Ensure boxes is a numpy array
         if not isinstance(boxes, np.ndarray):
             boxes = np.array(boxes)
-            
-        # Calculate size metrics
-        size_metrics = analyze_fragment_sizes(boxes)
-            
-        # Create fragments list with all required fields
-        fragments = []
-        for i, (box, score, mask, metrics) in enumerate(zip(boxes, scores, processed_masks, mask_metrics_list)):
-            # Calculate real size in cm
-            size = calculate_size(box)
-            real_size_cm = conversion_func(size)
-            
-            # Create a more compact fragment representation
-            fragment = {
-                "id": i,
-                "bbox": [int(x) for x in box.tolist()],
-                "score": float(score),
-                "size_cm": float(real_size_cm),
-                "mask_data": mask,  # The actual binary mask data
-                "metrics": {
-                    "area": float(metrics["area"]),
-                    "perimeter": float(metrics["perimeter"]),
-                    "circularity": float(metrics["circularity"])
-                }
-            }
-            fragments.append(fragment)
 
-        return {
-            "fragments": fragments,
-            "size_metrics": size_metrics
-        }
+        # Create fragments list with all required fields
+        return build_response(boxes, scores, processed_masks, mask_metrics_list, include_mask, include_metrics)
 
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
         # Clean up temporary file
         if temp_path and os.path.exists(temp_path):
@@ -216,14 +109,192 @@ async def predict(
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary file {temp_path}: {str(e)}")
 
-@router.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    try:
-        # Check if model is loaded
-        if ort_session is None:
-            raise RuntimeError("Model not loaded")
-        return {"status": "healthy"}
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+def prepare_image(contents: bytes) -> np.ndarray:
+    # Preprocess image
+    image_tensor = preprocess_image(contents)
+    logger.info(f"Preprocessed image shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
+
+    # Validate input shape
+    if not validate_input_shape(image_tensor):
+        error_msg = f"Invalid input shape: {image_tensor.shape}. Expected shape: (-1, 3, 512, 512)"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    return image_tensor
+
+def build_response(boxes, scores, processed_masks, mask_metrics_list, include_mask=False, include_metrics=False):
+    size_metrics = analyze_fragment_sizes(boxes)
+    fragments = []
+    for i, (box, score, mask, metrics) in enumerate(zip(boxes, scores, processed_masks, mask_metrics_list)):
+        # Calculate real size in cm
+        size = calculate_size(box)
+        real_size_cm = conversion_func(size)
+
+        # Create fragment with optional fields
+        fragment_data = {
+            "id": int(i),
+            "bbox": [int(x) for x in box.tolist()],
+            "score": float(score),
+            "size_cm": float(real_size_cm)
+        }
+
+        # Add optional fields if requested
+        if include_mask:
+            # Convert mask to a more efficient format for visualization
+            x1, y1, x2, y2 = [int(coord) for coord in box]
+            # Crop mask to bounding box
+            cropped_mask = mask[y1:y2, x1:x2]
+            # Convert to run-length encoding for efficient storage
+            rle_mask = binary_mask_to_rle(cropped_mask)
+            fragment_data["mask_data"] = {
+                "rle": rle_mask,
+                "bbox": [x1, y1, x2, y2],
+                "shape": [y2-y1, x2-x1]  # Height, Width
+            }
+        if include_metrics:
+            fragment_data["metrics"] = metrics
+
+        fragments.append(fragment_data)
+
+    return {
+        "fragments": fragments,
+        "size_metrics": size_metrics
+    }
+
+def binary_mask_to_rle(mask: np.ndarray) -> list:
+    """Convert binary mask to run-length encoding format.
+    Returns a list of [start, length] pairs where start is the index of the first 1
+    and length is the number of consecutive 1s."""
+    # Flatten the mask
+    flat_mask = mask.flatten()
+    rle = []
+    start = None
+    
+    for i, val in enumerate(flat_mask):
+        if val == 1 and start is None:
+            start = i
+        elif val == 0 and start is not None:
+            rle.append([start, i - start])
+            start = None
+    
+    # Handle case where mask ends with 1s
+    if start is not None:
+        rle.append([start, len(flat_mask) - start])
+    
+    return rle
+
+def rle_to_binary_mask(rle, shape):
+    """Convert run-length encoding back to binary mask.
+    Args:
+        rle: List of [start, length] pairs
+        shape: [height, width] of the mask
+    Returns:
+        Binary mask of shape (height, width)
+    """
+    height, width = shape
+    mask = np.zeros(height * width, dtype=np.uint8)
+    
+    for start, length in rle:
+        if 0 <= start < len(mask) and length > 0:
+            end = min(start + length, len(mask))
+            mask[start:end] = 1
+    
+    return mask.reshape(height, width)
+
+def run_inference(image_tensor: np.ndarray,  start_time: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ort_inputs = {ort_session.get_inputs()[0].name: image_tensor}
+    if time.time() - start_time > MODEL_CONFIG.timeout:
+            warning_msg = "Preprocessing took too long"
+            logger.warning(warning_msg)
+            raise TimeoutError(warning_msg)
+
+    logger.info("Running inference...")
+    ort_outs = ort_session.run(None, ort_inputs)
+    
+    # Debug: Log the shape and content details of model outputs
+    for i, out in enumerate(ort_outs):
+        logger.info(f"Model output {i} shape: {out.shape}, dtype: {out.dtype}")
+    
+    # Important: The actual mask data is in ort_outs[3], not ort_outs[2]
+    # ort_outs[2] contains scalar confidence values
+    boxes, scores, mask_confidence = ort_outs[0], ort_outs[1], ort_outs[2]
+    mask_probs = ort_outs[3]  # This contains the actual mask data
+    
+    logger.info(f"Boxes shape: {boxes.shape}, dtype: {boxes.dtype}")
+    logger.info(f"Scores shape: {scores.shape}, dtype: {scores.dtype}")
+    logger.info(f"Mask confidence shape: {mask_confidence.shape}, dtype: {mask_confidence.dtype}")
+    logger.info(f"Mask probs shape: {mask_probs.shape}, dtype: {mask_probs.dtype}")
+    
+    # Check if we've exceeded the timeout
+    if time.time() - start_time > MODEL_CONFIG.timeout:
+        raise TimeoutError("Inference took too long")
+    
+    return boxes, scores, mask_probs
+
+def process_masks(boxes, scores, mask_probs, start_time, include_metrics=False):
+    mask_metrics_list = []
+    processed_masks = []
+    MASK_THRESHOLD = 0.5
+    for i, (box, score, mask_prob) in enumerate(zip(boxes, scores, mask_probs)):
+        # Check timeout
+        if time.time() - start_time > MODEL_CONFIG.timeout:
+            raise TimeoutError("Mask processing took too long")
+
+        logger.info(f"Processing mask {i}")
+
+        # Handle different mask shapes - ensure it's 2D
+        if mask_prob.ndim == 3 and mask_prob.shape[0] == 1:  # If shape is [1, H, W]
+            mask_prob = mask_prob.squeeze(0)  # Convert to [H, W]
+        elif mask_prob.ndim == 3:  # If shape is [C, H, W] with C > 1
+            mask_prob = mask_prob[0]  # Take the first channel
+        
+        # Debug: Log mask probabilities
+        logger.info(f"Mask {i} shape: {mask_prob.shape}, min: {np.min(mask_prob)}, max: {np.max(mask_prob)}, mean: {np.mean(mask_prob)}")
+        
+        # Show histogram of mask probability values (debug)
+        unique_values, counts = np.unique(mask_prob, return_counts=True)
+        if len(unique_values) < 20:  # Only log if there aren't too many unique values
+            logger.info(f"Mask {i} unique probability values: {unique_values}")
+            logger.info(f"Mask {i} probability value counts: {counts}")
+        else:
+            logger.info(f"Mask {i} has {len(unique_values)} unique values")
+
+        # Convert box coordinates to integers and ensure they're within bounds
+        x1, y1, x2, y2 = [int(coord) for coord in box]
+        x1 = max(0, min(x1, 511))
+        y1 = max(0, min(y1, 511))
+        x2 = max(0, min(x2, 511))            
+        y2 = max(0, min(y2, 511))
+
+        # Threshold the mask probabilities to get binary mask
+        binary_mask = (mask_prob > MASK_THRESHOLD).astype(np.uint8)
+        
+        # Debug: Log binary mask stats
+        logger.info(f"Binary mask {i} - min: {np.min(binary_mask)}, max: {np.max(binary_mask)}, mean: {np.mean(binary_mask)}")
+
+        # Calculate metrics only if requested
+        metrics = None
+        if include_metrics:
+            metrics = calculate_mask_metrics(binary_mask)
+            logger.info(f"Mask {i} metrics: {metrics}")
+            mask_metrics_list.append(metrics)
+        else:
+            mask_metrics_list.append(None)
+
+        processed_masks.append(binary_mask)
+
+    return boxes, scores, processed_masks, mask_metrics_list
+
+def save_temp_file(contents: bytes) -> str:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+            temp_file.write(contents)
+            temp_path = temp_file.name
+    logger.info(f"Saved file to {temp_path}")
+    return temp_path 
+
+def validate_input_shape(tensor: np.ndarray) -> bool:
+    """Validate the input tensor shape."""
+    expected_shape = (-1, 3, 512, 512)
+    actual_shape = tensor.shape
+    return all(exp in [-1, act] for exp, act in zip(expected_shape, actual_shape))
+

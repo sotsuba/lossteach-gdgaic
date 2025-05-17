@@ -4,7 +4,7 @@ metadata:
   name: model-api
   namespace: gdgaic
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: model-api
@@ -15,34 +15,22 @@ spec:
     spec:
       containers:
       - name: model-api
-        image: sotsuba/lossteach-gdgaic-dashboard:latest
+        image: sotsuba/lossteach-gdgaic-model-api:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 5000
+        - containerPort: 8000
         env:
         - name: PORT
-          value: "5000"
+          value: "8000"
         - name: HOST
           value: "0.0.0.0"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "1000m"
+            memory: 1Gi
+            cpu: 3000m
           limits:
-            memory: "2Gi"
-            cpu: "1750m"
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 15
-          periodSeconds: 20
+            memory: 2Gi
+            cpu: 5000m
 
 ---
 apiVersion: apps/v1
@@ -68,18 +56,11 @@ spec:
         - containerPort: 8501
         env:
         - name: MODEL_API_URL
-          value: "http://model-api:5000"
+          value: "http://model-api:8000"
         - name: HOST
           value: "0.0.0.0"
         - name: PORT
           value: "8501"
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
 
 ---
 apiVersion: v1
@@ -91,8 +72,8 @@ spec:
   selector:
     app: model-api
   ports:
-  - port: 5000
-    targetPort: 5000
+  - port: 8000
+    targetPort: 8000
   type: ClusterIP
 
 ---
@@ -109,7 +90,7 @@ spec:
     app: model-api
   ports:
   - port: 80
-    targetPort: 5000
+    targetPort: 8000
   type: LoadBalancer
 
 ---

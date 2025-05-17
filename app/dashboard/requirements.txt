@@ -6,3 +6,4 @@ Pillow>=10.2.0
 pandas>=2.2.0
 tenacity>=8.2.0  # For retry logic
 python-dotenv>=1.0.0 
+opencv-python>=4.10.0

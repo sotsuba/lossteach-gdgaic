@@ -2,27 +2,27 @@ version: '3.8'
 
 services:
   model-api:
-    image: sotsuba/lossteach-gdgaic-model-api
+    image: sotsuba/lossteach-gdgaic-model-api:latest
     container_name: gdgaic-model-api
     build:
       context: app/model-api
       dockerfile: Dockerfile
     ports:
-    - "5000:5000"
+    - "8000:8000"
     networks:
       - gdgaic-network
     environment:
       - HOST=0.0.0.0
-      - PORT=5000
+      - PORT=8000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
 
   dashboard:
-    image: sotsuba/lossteach-gdgaic-dashboard
+    image: sotsuba/lossteach-gdgaic-dashboard:latest
     container_name: gdgaic-dashboard
     build:
       context: app/dashboard
@@ -35,7 +35,7 @@ services:
     networks:
       - gdgaic-network
     environment:
-      - MODEL_API_URL=http://model-api:5000
+      - MODEL_API_URL=http://model-api:8000
       - HOST=0.0.0.0
       - PORT=8501
 

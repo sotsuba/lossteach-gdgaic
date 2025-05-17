@@ -10,6 +10,12 @@ variable "region" {
     default     = "asia-east1"
 }
 
+variable "zone" {
+    type        = string
+    description = "The zone to deploy the resources to"
+    default     = "asia-east1-a"
+}
+
 variable "cluster_name" {
     type        = string
     description = "The name of the GKE cluster"
@@ -31,7 +37,7 @@ variable "cluster_node_count" {
 variable "cluster_node_type" {
     type        = string
     description = "The type of node to use in the GKE cluster"
-    default     = "e2-medium"
+    default     = "c2d-standard-4"
 }
 
 variable "cluster_disk_type" {

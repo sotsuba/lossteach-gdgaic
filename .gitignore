@@ -360,4 +360,5 @@ cython_debug/
 *.tfstate.backup
 *.tfstate.lock.info
 *.lock
-
+*.hcl
+*.lock.hcl

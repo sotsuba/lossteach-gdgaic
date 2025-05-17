@@ -6,6 +6,21 @@ import onnxruntime
 import os
 import sys
 
+class MaskRCNNWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, images):
+        # The model returns a list of dicts (one per image)
+        outputs = self.model(images)
+        # For ONNX, return tensors (not list of dicts)
+        # Here, just for the first image in the batch
+        boxes = outputs[0]['boxes']
+        scores = outputs[0]['scores']
+        masks = outputs[0]['masks']  # [N, 1, H, W]
+        return boxes, scores, masks
+
 def convert_to_onnx(model_path, onnx_path):
     # Check if model file exists
     if not os.path.exists(model_path):
@@ -19,6 +34,7 @@ def convert_to_onnx(model_path, onnx_path):
         model = maskrcnn_resnet50_fpn(pretrained=False, num_classes=2)
         model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         model.eval()
+        wrapper = MaskRCNNWrapper(model)
 
         # Create a dummy input with dynamic batch size
         dummy_input = torch.randn(1, 3, 512, 512)
@@ -26,20 +42,19 @@ def convert_to_onnx(model_path, onnx_path):
         print("Exporting model to ONNX format...")
         # Export the model to ONNX
         torch.onnx.export(
-            model,
+            wrapper,
             dummy_input,
             onnx_path,
             export_params=True,
             opset_version=11,
             do_constant_folding=True,
             input_names=['input'],
-            output_names=['output', '2319', '2831', 'onnx::Shape_2320'],
+            output_names=['boxes', 'scores', 'masks'],
             dynamic_axes={
                 'input': {0: 'batch_size'},
-                'output': {0: 'batch_size'},
-                '2319': {0: 'batch_size'},
-                '2831': {0: 'batch_size'},
-                'onnx::Shape_2320': {0: 'batch_size'}
+                'boxes': {0: 'num_boxes'},
+                'scores': {0: 'num_boxes'},
+                'masks': {0: 'num_boxes'}
             }
         )
 

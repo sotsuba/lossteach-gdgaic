@@ -4,6 +4,7 @@
 PROJECT_ID="gdgaic-lossteach"
 CLUSTER_NAME="dev-cluster"
 REGION="asia-east1"
+ZONE="asia-east1-a"
 
 # Function to check if cluster exists
 check_cluster_exists() {
@@ -45,7 +46,7 @@ terraform apply -auto-approve
 if [ $? -eq 0 ]; then
     echo "Terraform apply completed successfully!"
     gcloud config set project $PROJECT_ID
-    gcloud config set compute/zone  "${REGION}-a"
+    gcloud config set compute/zone  $ZONE
     gcloud container clusters get-credentials $CLUSTER_NAME \
         --project $PROJECT_ID \
         --region $REGION

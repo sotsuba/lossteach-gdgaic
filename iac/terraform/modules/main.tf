@@ -26,7 +26,7 @@ resource "google_container_cluster" "primary" {
     # node pool and immediately delete it.
     remove_default_node_pool = true
     initial_node_count       = 1
-
+    
     node_config {
         machine_type = var.cluster_node_type
         disk_type    = var.cluster_disk_type
@@ -41,26 +41,27 @@ resource "google_container_cluster" "primary" {
 
     lifecycle {
         create_before_destroy = true
+        ignore_changes = [name, location]
     }
 }
 
 resource "google_container_node_pool" "primary_nodes" {
     project  = var.project_id
     name     = "${var.cluster_name}-node-pool"
-    location = "${var.region}-a"
+    location = var.zone
     cluster  = google_container_cluster.primary.name
-    node_count = var.cluster_node_count
-
-    autoscaling {
-        min_node_count = var.cluster_node_count
-        max_node_count = var.cluster_node_count
-    }
-
+        # node_count = var.cluster_node_count
+    node_locations = ["asia-east1-a"]
     node_config {
         machine_type = var.cluster_node_type
         disk_type    = var.cluster_disk_type
         disk_size_gb = var.cluster_disk_size
         image_type   = "COS_CONTAINERD"
+    }
+
+    lifecycle {
+        create_before_destroy = true
+        ignore_changes = [name]
     }
 }
 

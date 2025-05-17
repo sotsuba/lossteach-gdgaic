@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.openapi.docs import get_swagger_ui_html
 from routers import predict
 import uvicorn
 import logging
@@ -36,45 +35,13 @@ app = FastAPI(
     title="Fragment Detection API",
     description="API for detecting and analyzing fragments in images",
     version="1.0.0",
-    docs_url=None,  # Disable default docs
-    redoc_url=None,  # Disable default redoc
     openapi_url="/openapi.json",
-    default_response_class=JSONResponse
+    default_response_class=JSONResponse,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Disable model expansion by default
+    swagger_ui_init_oauth={},  # Disable OAuth by default
 )
-
-# Custom docs endpoint with optimized settings
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",
-        title="Fragment Detection API - Documentation",
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css",
-        swagger_ui_parameters={
-            "defaultModelsExpandDepth": -1,
-            "displayRequestDuration": True,
-            "filter": True,
-            "tryItOutEnabled": True,
-            "syntaxHighlight.theme": "monokai",
-            "docExpansion": "none",
-            "operationsSorter": "alpha",
-            "tagsSorter": "alpha",
-            "showExtensions": True,
-            "showCommonExtensions": True,
-            "supportedSubmitMethods": ["get", "post"],
-            "persistAuthorization": True,
-            "displayOperationId": False,
-            "deepLinking": True,
-            "showMutatedRequest": False,
-            "defaultModelRendering": "model",
-            "defaultModelExpandDepth": 1,
-            "defaultModelsExpandDepth": 1,
-            "showExtensions": True,
-            "showCommonExtensions": True,
-            "supportedSubmitMethods": ["get", "post"],
-            "validatorUrl": None,
-        }
-    )
 
 # Add middleware
 app.add_middleware(TimeoutMiddleware)
@@ -107,7 +74,11 @@ config = uvicorn.Config(
     limit_concurrency=10,
     loop="asyncio",
     http="auto",
-    log_level="info"
+    log_level="info",
+    proxy_headers=True,
+    server_header=False,
+    date_header=False,
+    forwarded_allow_ips="*"
 )
 
 if __name__ == "__main__":
