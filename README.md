@@ -26,13 +26,13 @@
 # Introduction
 ## About us
 ### Teammates
-* Nguyen Minh Duc (Leader)
-* To Thanh Dat
-* Nguyen Tien Son
+* Nguyen Minh Duc - [ducto489](https://github.com/ducto489) - Leader
+* To Thanh Dat - [tothanhdat2006](https://github.com/tothanhdat2006)
+* Nguyen Tien Son - [https://github.com/sotsuba](https://github.com/sotsuba) 
 ### Mentor
-* Ngo Hoang Bach
+* Ngo Hoang Bach - [BachNgoH](https://github.com/BachNgoH)
 ## Overview
-
+## Features
 ---
 # __Technical Details__
 ## __Repository’s structure__
