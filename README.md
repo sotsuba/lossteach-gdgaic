@@ -10,7 +10,8 @@ Still updating...
 
 **[2. Technical Details](#technical-details)**
 - _[2.1 Repository's structure](#repositorys-structure)_
-- _[2.2 APIs Documentation](#api-documentation)_
+- _[2.2 System Architecture](#system-architecture)_
+- _[2.3 APIs Documentation](#api-documentation)_
 
 **[3. Prerequisites](#prerequisites)**
 
