@@ -5,15 +5,15 @@
 - [1.1 About us](#about-us)
 - [1.2 Overview](#overview)
 
-[2. Technical Details]
+[2. Technical Details](#technical-details)
 - [2.1 Repository's structure](#repositorys-structure)
-- [2.2 API Documentations]
+- [2.2 API Documentations](#api-documentation)
 
-[3. Prerequisites]
+[3. Prerequisites](#prerequisites)
 
-[4. Local Setup]
+[4. Local Setup](#local-setup)
 
-[5. Cloud Setup]
+[5. Cloud Setup](#cloud-setup)
 
 # Introduction
 ## About us
