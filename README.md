@@ -119,6 +119,26 @@ curl -X 'POST' \
 
 ---
 # __Prerequisites__
+Model weights: 
+```bash
+# Install the huggingface CLI
+pip install -U "huggingface_hub[cli]"
+# Login with Hugging Face Credential
+huggingface-cli login
+# Push your model files
+huggingface-cli upload sotsuba/gdgaic-lossteach-fragment .
+```
+and you have to rename the modelweight to `model.onnx` and put it in here
+```
+├── app                 
+│   ├── dashboard        
+│   ├── model-api        
+│   │   ├── models       # Where you have to put the model.onnx when pulling from huggingface
+│   │   ├── routers      
+│   │   ├── tmp         
+│   │   └── utils  
+...
+```
 ## __On-premises__
 ### __Technical__
 - Python: v3.9
