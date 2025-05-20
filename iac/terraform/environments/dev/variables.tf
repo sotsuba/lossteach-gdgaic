@@ -37,7 +37,7 @@ variable "cluster_node_count" {
 variable "cluster_node_type" {
     type        = string
     description = "The type of node to use in the GKE cluster"
-    default     = "c2d-standard-4"
+    default     = "c2-medium"
 }
 
 variable "cluster_disk_type" {

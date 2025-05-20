@@ -1,4 +1,3 @@
-import streamlit as st
 import requests
 from requests import RequestException
 import logging 

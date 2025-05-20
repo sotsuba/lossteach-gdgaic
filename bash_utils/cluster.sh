@@ -5,8 +5,11 @@ PROJECT_ID="gdgaic-lossteach"
 CLUSTER_NAME="dev-cluster"
 REGION="asia-east1"
 ZONE="asia-east1-a"
+LOG_FILE="/tmp/cluster.log"
+source ./logging_schema.sh
 
-# Function to check if cluster exists
+# --- Function ---
+
 check_cluster_exists() {
     gcloud container clusters describe $CLUSTER_NAME \
         --project $PROJECT_ID \
@@ -14,44 +17,46 @@ check_cluster_exists() {
     return $?
 }
 
-# Function to delete cluster
 delete_cluster() {
-    echo "Deleting existing cluster $CLUSTER_NAME..."
+    warning "Deleting existing cluster $CLUSTER_NAME..."
     gcloud container clusters delete $CLUSTER_NAME \
         --project $PROJECT_ID \
         --region $REGION \
         --quiet
 }
 
-# Main execution
-echo "Checking if cluster $CLUSTER_NAME exists..."
+
+# ------ Main ------
+log "Checking if cluster $CLUSTER_NAME exists..."
 
 if check_cluster_exists; then
-    echo "Cluster exists. Proceeding with deletion..."
+    log "Cluster exists. Proceeding with deletion..."
     delete_cluster
-    echo "Waiting for cluster deletion to complete..."
+    log "Waiting for cluster deletion to complete..."
 else
-    echo "Cluster does not exist. Proceeding with creation..."
+    warning "Cluster does not exist. Proceeding with creation..."
 fi
 
 # Initialize Terraform
-echo "Initializing Terraform..."
+cd iac/terraform/environments/dev
+log "Initializing Terraform..."
 terraform init
 
 # Apply Terraform configuration
-echo "Applying Terraform configuration..."
+log "Applying Terraform configuration..."
 terraform apply -auto-approve
 
 # Check if apply was successful
 if [ $? -eq 0 ]; then
-    echo "Terraform apply completed successfully!"
+    success "Terraform apply completed successfully!"
+    log "Trying to attach the cluster to terminal..."
     gcloud config set project $PROJECT_ID
     gcloud config set compute/zone  $ZONE
     gcloud container clusters get-credentials $CLUSTER_NAME \
         --project $PROJECT_ID \
         --region $REGION
+    success "The GKE clusters was attached to this terminal"
 else
-    echo "Terraform apply failed. Please check the error messages above."
-    exit 1
+    error_exit "Terraform apply failed. Please check the error messages above."
 fi 
 

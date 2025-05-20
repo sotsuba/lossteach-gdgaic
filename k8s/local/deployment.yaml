@@ -18,19 +18,23 @@ spec:
         image: sotsuba/lossteach-gdgaic-model-api:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8000
+        - containerPort: 5000
         env:
         - name: PORT
-          value: "8000"
+          value: "5000"
         - name: HOST
           value: "0.0.0.0"
         resources:
           requests:
-            memory: 1Gi
-            cpu: 3000m
-          limits:
             memory: 2Gi
-            cpu: 5000m
+            cpu: 4000m
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 25
+          periodSeconds: 12
+
 
 ---
 apiVersion: apps/v1
@@ -56,7 +60,7 @@ spec:
         - containerPort: 8501
         env:
         - name: MODEL_API_URL
-          value: "http://model-api:8000"
+          value: "http://model-api:5000"
         - name: HOST
           value: "0.0.0.0"
         - name: PORT
@@ -72,27 +76,26 @@ spec:
   selector:
     app: model-api
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: 5000
+    targetPort: 5000
   type: ClusterIP
 
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: model-api-external
-  namespace: gdgaic
-  annotations:
-    cloud.google.com/neg: '{"ingress": true}'  # Enable NEG for better load balancing
-    cloud.google.com/load-balancer-type: "Internal"  # Optional: Use internal load balancer if needed
-spec:
-  selector:
-    app: model-api
-  ports:
-  - port: 80
-    targetPort: 8000
-  type: LoadBalancer
-
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: model-api-external
+#   namespace: gdgaic
+#   annotations:
+#     cloud.google.com/neg: '{"ingress": true}'  # Enable NEG for better load balancing
+#     cloud.google.com/load-balancer-type: "Internal"  # Optional: Use internal load balancer if needed
+# spec:
+#   selector:
+#     app: model-api
+#   ports:
+#   - port: 80
+#     targetPort: 8000
+#   type: LoadBalancer
 ---
 apiVersion: v1
 kind: Service
@@ -103,6 +106,6 @@ spec:
   selector:
     app: dashboard
   ports:
-  - port: 80
+  - port: 8501
     targetPort: 8501
-  type: LoadBalancer 
+  type: NodePort

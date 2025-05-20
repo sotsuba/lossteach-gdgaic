@@ -1,14 +1,10 @@
 import streamlit as st 
 import numpy as np 
 from PIL import Image
-import requests
-import io
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import ListedColormap
-import base64
 import random
-import src.config as config
 import cv2
 
 class FragmentVisualizer:
@@ -114,36 +110,32 @@ class FragmentVisualizer:
             # Individual fragment masks
             st.markdown('<div class="card-container">', unsafe_allow_html=True)
             self.display_fragment_masks()
-            st.markdown('</div>', unsafe_allow_html=True)
-    
+    st.markdown('</div>', unsafe_allow_html=True)
+
     def display_bounding_boxes(self):
         """Display all fragment bounding boxes with size labels on a single image"""
         if not self.fragments:
             st.warning("No fragments to display")
             return
-        
+
         # Create figure with appropriate size
         fig_width = 8
         fig_height = fig_width * (self.height / self.width)
-        
+
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        
+
         # Display original image
         ax.imshow(self.img_array)
         ax.set_title("Fragment Bounding Boxes")
         ax.axis('off')
-        
+
         # Add bounding boxes and labels
         for i, fragment in enumerate(self.fragments):
-            bbox = fragment.get("bbox", None)
-            if bbox:
+            if bbox := fragment.get("bbox", None):
                 x1, y1, x2, y2 = bbox
                 width = x2 - x1
                 height = y2 - y1
-                
-                # Get fragment size
-                fragment_size = fragment.get("real_size_cm", fragment.get("size_cm", 0))
-                
+
                 # Create rectangle patch
                 rect = patches.Rectangle(
                     (x1, y1), width, height, 
@@ -152,33 +144,19 @@ class FragmentVisualizer:
                     facecolor='none'
                 )
                 ax.add_patch(rect)
-                
+
                 # Add fragment ID and size text with background box
-                box_label = f"#{i+1}: {fragment_size:.1f} cm"
-                text_x = x1
                 text_y = y1 - 5
-                
+
                 # Handle text positioning for boxes near edges
                 if text_y < 15:
                     text_y = y1 + height + 15
-                
-                # Create text with background box for better visibility
-                text_box = ax.text(
-                    text_x, text_y, box_label,
-                    color='white',
-                    fontsize=10,
-                    fontweight='bold',
-                    bbox=dict(
-                        facecolor=self.colors[i],
-                        alpha=0.8,
-                        edgecolor='none',
-                        boxstyle='round,pad=0.3'
-                    )
-                )
-        
+
+
+
         # Adjust layout
         plt.tight_layout()
-        
+
         # Display the figure
         st.pyplot(fig)
 
@@ -252,7 +230,7 @@ class FragmentVisualizer:
         if not self.fragments:
             st.warning("No fragments to display")
             return
-        
+
         # Determine grid layout based on number of fragments
         if self.num_fragments <= 3:
             cols = self.num_fragments
@@ -260,33 +238,33 @@ class FragmentVisualizer:
             cols = 4
         else:
             cols = 5
-        
+
         # Create grid of columns for displaying masks
         mask_cols = st.columns(min(cols, self.num_fragments))
-        
+
         for i, fragment in enumerate(self.fragments):
             col_idx = i % cols
-            
+
             with mask_cols[col_idx]:
                 # Get bounding box and mask data
                 bbox = fragment.get("bbox", None)
                 mask_data = fragment.get("mask_data", None)
-                
+
                 if bbox and mask_data:
                     # Extract mask parameters
                     x1, y1, x2, y2 = bbox
                     mask_rle = mask_data.get("rle", [])
                     mask_shape = mask_data.get("shape", [y2-y1, x2-x1])
-                    
+
                     # Create binary mask from RLE
                     mask = self._rle_to_binary_mask(mask_rle, mask_shape)
-                    
+
                     # Create visualization
                     fig, ax = plt.subplots(figsize=(3, 3))
-                    
+
                     # Create a cropped view of the original image
                     cropped_img = self.img_array[y1:y2, x1:x2]
-                    
+
                     # Apply the mask as an overlay
                     overlay = np.zeros_like(cropped_img)
                     if cropped_img.ndim == 3:  # Color image
@@ -298,21 +276,19 @@ class FragmentVisualizer:
                     else:  # Grayscale image
                         ax.imshow(cropped_img, cmap='gray')
                         ax.imshow(mask, alpha=0.5, cmap=ListedColormap(['none', self.colors[i]]))
-                    
+
                     # Remove axis labels
                     ax.set_xticks([])
                     ax.set_yticks([])
-                    
+
                     # Add fragment number and size
                     fragment_size = fragment.get("size_cm", 0)
                     ax.set_title(f"#{i+1}: {fragment_size:.1f} cm", fontsize=10)
-                    
+
                     st.pyplot(fig)
                     plt.close(fig)
-                    
-                    # Display fragment metrics if available
-                    metrics = fragment.get("metrics", None)
-                    if metrics:
+
+                    if metrics := fragment.get("metrics", None):
                         metrics_html = f"""
                         <div class="fragment-metrics">
                             <span class="fragment-tag" style="background-color: {self.colors[i]}">#{i+1}</span>

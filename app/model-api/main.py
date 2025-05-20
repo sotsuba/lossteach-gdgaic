@@ -7,6 +7,7 @@ import logging
 import asyncio
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -62,28 +63,12 @@ app.include_router(
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-# Server configuration
-config = uvicorn.Config(
-    "main:app",
-    host="0.0.0.0",
-    port=8000,
-    reload=True,
-    workers=1,
-    timeout_keep_alive=30,
-    limit_concurrency=10,
-    loop="asyncio",
-    http="auto",
-    log_level="info",
-    proxy_headers=True,
-    server_header=False,
-    date_header=False,
-    forwarded_allow_ips="*"
-)
-
 if __name__ == "__main__":
-    server = uvicorn.Server(config)
-    server.run()
-
-
-
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    uvicorn.run(
+        "main:app",
+        host=host,
+        port=port,
+        reload=True
+    )

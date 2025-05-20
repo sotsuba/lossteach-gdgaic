@@ -55,7 +55,7 @@ class DashboardApp:
         except Exception as e:
             self.api_healthy = False
             logger.error(f"Failed to check API health: {str(e)}")
-    
+
     def run(self):
         """Run the main dashboard application"""
         st.title("Rock Fragment Detection Dashboard 🔍")
@@ -67,7 +67,7 @@ class DashboardApp:
         # Set up the sidebar
         with st.sidebar:
             self.display_sidebar()
-            
+    
         # Main content area
         if st.session_state.selected_image:
             self.show_analysis(st.session_state.processed_images[st.session_state.selected_image])
@@ -120,7 +120,7 @@ class DashboardApp:
         st.markdown('<div class="card-container">', unsafe_allow_html=True)
         st.image(data['file'], use_container_width=True, caption="Original Image")
         st.markdown('</div>', unsafe_allow_html=True)
-        
+
         # Use the new FragmentVisualizer class for all visualizations
         visualizer = FragmentVisualizer(fragments, data['file'])
         visualizer.display_all_visualizations(data['process_time'])
@@ -128,7 +128,7 @@ class DashboardApp:
     def display_sidebar(self):
         """Display the sidebar with controls and settings"""
         st.header("📊 Controls & Settings")
-
+        
         # File upload section
         self.handle_file_upload()
         
@@ -149,7 +149,7 @@ class DashboardApp:
         st.subheader("📁 Upload Images")
         current_file_count = len(st.session_state.processed_images)
         remaining_slots = config.MAX_FILES - current_file_count
-
+        
         # Detection threshold slider
         score_threshold = st.slider(
             'Detection Threshold',
@@ -159,7 +159,7 @@ class DashboardApp:
             step=0.05,
             help="Adjust the confidence threshold for fragment detection"
         )
-
+        
         if remaining_slots > 0:
             st.info(f"You can upload up to {remaining_slots} more image(s)")
 
@@ -202,12 +202,12 @@ class DashboardApp:
                 except Exception as e:
                     st.error(f"❌ Error processing {uploaded_file.name}: {str(e)}")
                     logger.error(f"Error details: {str(e)}", exc_info=True)
-                    
+        
     def display_image_selector(self):
         """Display the image selector in the sidebar"""
         st.markdown("---")
         st.subheader("🖼️ Select Image")
-
+        
         # Use a grid for selection
         for filename, data in st.session_state.processed_images.items():
             st.markdown('<div class="thumbnail-container">', unsafe_allow_html=True)
@@ -223,8 +223,8 @@ class DashboardApp:
                 ):
                     st.session_state.selected_image = filename
             st.markdown('</div>', unsafe_allow_html=True)
-                    
-        # Clear all button 
+            
+        # Clear all button
         if st.button("🗑️ Clear All", type="secondary", use_container_width=True):
             st.session_state.processed_images = {}
             st.session_state.total_time = 0

@@ -27,7 +27,9 @@ FROM python:3.9-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/opt/venv/bin:$PATH"
+    PATH="/opt/venv/bin:$PATH" \
+    PORT=5000 \
+    HOST=0.0.0.0
 
 # Install only the runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -53,11 +55,14 @@ COPY --chown=appuser:appuser . .
 USER appuser
 
 # Expose the port FastAPI runs on
-EXPOSE 8000
+EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=60s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:5000/health || exit 1
 
 # Run the FastAPI application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "1"]
+
+# Comment out the Gunicorn command since it's not working as expected
+# CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "1", "main:app"]

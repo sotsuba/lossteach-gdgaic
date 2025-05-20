@@ -11,4 +11,4 @@ Capture an image showing:
 
 ## How to Add
 
-Replace the screenshot.png file in this directory with an actual screenshot once the application is running with sample data. 
+Replace the screenshot.png file in this directory with an actual screenshot once the application is running with sample data. ip a | grep inet
