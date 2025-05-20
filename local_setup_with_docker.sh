@@ -10,9 +10,9 @@ check_command docker
 check_docker
 
 # --- Main ---
-success "Docker is installed. The docker images is building..."
-docker compose -f docker-compose.app.yml up --remove-orphans --detach --build --quiet-pull > /dev/null 2>&1
+success "Docker is installed. The docker images is building... (about 1min)"
+docker compose -f docker-compose.app.yml up --remove-orphans --detach --build --quiet-pull 
 success "The application is started successfully."
-log "You can access this link: 0.0.0.0:8501"
+log "You can access this link: http://0.0.0.0:8501"
 
 

@@ -8,18 +8,12 @@ services:
       context: app/model-api
       dockerfile: Dockerfile
     ports:
-    - "8000:8000"
+    - "5000:5000"
     networks:
       - gdgaic-network
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   dashboard:
     image: sotsuba/lossteach-gdgaic-dashboard:latest
@@ -35,7 +29,7 @@ services:
     networks:
       - gdgaic-network
     environment:
-      - MODEL_API_URL=http://model-api:8000
+      - MODEL_API_URL=http://model-api:5000
       - HOST=0.0.0.0
       - PORT=8501
 

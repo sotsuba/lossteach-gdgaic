@@ -17,7 +17,6 @@
 ## Easy version
 * In this section, you only have to run some convenient bash scripts so that you can deploy the application easily.
 * The scripts might not work properly on machine doesn't have Bash. You might have to run them on bash.
-
 ### __Local setup with Docker__
 ```bash
 chmod +x local_setup_with_docker.sh
