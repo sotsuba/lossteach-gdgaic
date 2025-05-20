@@ -36,6 +36,7 @@
 ---
 # __Technical Details__
 ## __Repository’s structure__
+<<<<<<< HEAD
 ```
 .
 ├── app                  # Main directory for application
@@ -104,6 +105,11 @@ curl -X 'POST' \
     "status": "healthy"
   }
   ```
+=======
+## __System Architecture__
+![Rock Fragment Detection](imgs/map.png)
+## __API Documentation__
+>>>>>>> 67812f45a7528a6fdada2430607ef073c9695c7c
 
 ---
 # __Prerequisites__
