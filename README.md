@@ -26,7 +26,9 @@ Still updating...
     
 **[5. Cloud Setup](#cloud-setup)**
 
-**[6. Optional Setup]**
+**[6. Optional Setup](#optional-setup)**
+- [6.1 Jenkins for CI/CD](#jenkins-for-cicd)
+- [6.2 Prometheus & Grafana for Observable Systems](#prometheus--grafana-for-observable-systems)
 
 
 # Introduction
@@ -38,7 +40,10 @@ Still updating...
 ### Mentor
 * Ngo Hoang Bach - [BachNgoH](https://github.com/BachNgoH)
 ## Overview
+Still updating...
 ## Features
+Still updating...
+
 ---
 # __Technical Details__
 ## __Repository’s structure__
@@ -257,4 +262,10 @@ make run_dashboard
 https://github.com/user-attachments/assets/25c17d4b-5bd3-4686-a967-acf5c965f582
 
 # Cloud Setup
-still updating...
+Still updating...
+# Optional Setup 
+Still updating...
+## __Jenkins for CI/CD__
+Still updating...
+## __Prometheus & Grafana for Observable Systems__
+Still updating...
