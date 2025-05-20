@@ -1,19 +1,27 @@
 # Loss Teach GDGAIC: Blast Fragment Segmentation
 
 # __Table of Contents__
-[1. Introduction](#introduction)
-- [1.1 About us](#about-us)
-- [1.2 Overview](#overview)
+**[1. Introduction](#introduction)**
+- _[1.1 About us](#about-us)_
+- _[1.2 Overview](#overview)_
 
-[2. Technical Details](#technical-details)
-- [2.1 Repository's structure](#repositorys-structure)
-- [2.2 API Documentations](#api-documentation)
+**[2. Technical Details](#technical-details)**
+- _[2.1 Repository's structure](#repositorys-structure)_
+- _[2.2 API Documentations](#api-documentation)_
 
-[3. Prerequisites](#prerequisites)
+**[3. Prerequisites](#prerequisites)**
 
-[4. Local Setup](#local-setup)
-
-[5. Cloud Setup](#cloud-setup)
+**[4. Local Setup](#local-setup)**
+- _[4.1 Easy Version](#easy-version)_
+  - [4.1.1 Local setup with Docker](#local-setup-with-docker)
+  - [4.1.2 Local setup on Kubernetes with Minikube](#local-setup-on-kubernetes-with-minikube)
+    
+- _[4.2 Hard Version](#hard-version)_
+  - [4.2.1 Local setup with Docker](#local-setup-with-docker-recommended)
+  - [4.2.2 Local setup on Kubernetes with Minikube](#local-setup-on-kubernetes-with-minikube-1)
+  - [4.2.1 Local setup by yourself (no Docker, no Minikube) (not recommended)](#local-setup-by-yourself-no-docker-no-minikube-not-recommended)
+    
+**[5. Cloud Setup](#cloud-setup)**
 
 # Introduction
 ## About us
@@ -39,7 +47,7 @@
 
 
 # Local Setup
-<h2 align="center"> <u>Easy Version</u> </h2>
+## __Easy Version__
 
 * In this section, you only have to run some convenient bash scripts so that you can deploy the application easily.
 * The scripts might not work properly on machine doesn't have Bash. You might have to run them on bash.
@@ -55,7 +63,7 @@ https://github.com/user-attachments/assets/a25b1eb2-cb33-4ae9-b712-138a6fe28fda
 
 
 
-### __Local setup with Minikube__
+### __Local setup on Kubernetes with Minikube__
 ```bash
 chmod +x local_setup_with_minikube.sh
 ./local_setup_with_minikube.sh
@@ -64,7 +72,7 @@ chmod +x local_setup_with_minikube.sh
 https://github.com/user-attachments/assets/8b38a584-4790-485a-8c17-15dcac0da5be
 
 
-<h2 align="center"> <u>Hard Version</u> </h2>
+## __Hard Version__
 
 ### __Local setup with Docker__ (Recommended)
 #### Step 1: Start the Docker Engine or Docker Desktop if it doesn't start yet.
@@ -77,7 +85,7 @@ If things run properly, the service be hosted here: http://0.0.0.0:8501
 
 https://github.com/user-attachments/assets/ad537d91-197a-48bf-99a4-9887fe4c00d7
 
-### __Local setup with Minikube__
+### __Local setup on Kubernetes with Minikube__
 #### Step 0: Make sure the Docker Engine and Minikube is started
 Run this on your terminal
 ```bash
