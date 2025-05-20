@@ -27,6 +27,10 @@ chmod +x local_setup_with_docker.sh
 chmod +x local_setup_with_minikube.sh
 ./local_setup_with_minikube.sh
 ```
+
+https://github.com/user-attachments/assets/8b38a584-4790-485a-8c17-15dcac0da5be
+
+
 ## Hard Version
 ### __Local setup with Docker__ (Recommended)
 #### Step 1: Start the Docker Engine or Docker Desktop if it doesn't start yet.
