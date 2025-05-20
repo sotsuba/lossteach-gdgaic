@@ -23,6 +23,9 @@
 chmod +x local_setup_with_docker.sh
 ./local_setup_with_docker.sh
 ```
+
+https://github.com/user-attachments/assets/3001ce59-7795-4b4a-ac64-ba1ce885d283
+
 ### __Local setup with Minikube__
 ```bash
 chmod +x local_setup_with_minikube.sh
