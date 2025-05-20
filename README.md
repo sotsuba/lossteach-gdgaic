@@ -1,17 +1,42 @@
 # Loss Teach GDGAIC: Blast Fragment Segmentation
 
-## Introduction
+# __Table of Contents__
+[1. Introduction](#introduction)
+- [1.1 About us](#about-us)
+- [1.2 Overview](#overview)
 
+[2. Technical Details]
+- [2.1 Repository's structure](#repositorys-structure)
+- [2.2 API Documentations]
+
+[3. Prerequisites]
+
+[4. Local Setup]
+
+[5. Cloud Setup]
+
+# Introduction
+## About us
 ### Teammates
 * Nguyen Minh Duc (Leader)
 * To Thanh Dat
 * Nguyen Tien Son
 ### Mentor
 * Ngo Hoang Bach
+## Overview
 
 ---
+# __Technical Details__
+## __Repository’s structure__
+## __System Architecture__
 ![Rock Fragment Detection](imgs/map.png)
+## __API Documentation__
+
 ---
+# __Prerequisites__
+
+
+
 
 # Local Setup
 <h2 align="center"> <u>Easy Version</u> </h2>
@@ -157,5 +182,5 @@ make run_dashboard
 #### Step 4: Access the frontend service: 
 - The frontend will be hosted here: http://0.0.0.0:8501/
 
-# Cloud
+# Cloud Setup
 still updating...
