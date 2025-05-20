@@ -119,7 +119,7 @@ curl -X 'POST' \
 
 ---
 # __Prerequisites__
-Model weights: 
+## REMEMBER TO LOAD THE MODEL
 ```bash
 # Install the huggingface CLI
 pip install -U "huggingface_hub[cli]"
