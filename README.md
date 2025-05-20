@@ -1,13 +1,16 @@
 # Loss Teach GDGAIC: Blast Fragment Segmentation
+AH yes I will put something in here lol
 
+Still updating...
 # __Table of Contents__
 **[1. Introduction](#introduction)**
 - _[1.1 About us](#about-us)_
 - _[1.2 Overview](#overview)_
+- _[1.3 Features](#features)_
 
 **[2. Technical Details](#technical-details)**
 - _[2.1 Repository's structure](#repositorys-structure)_
-- _[2.2 API Documentations](#api-documentation)_
+- _[2.2 APIs Documentation](#api-documentation)_
 
 **[3. Prerequisites](#prerequisites)**
 
@@ -19,16 +22,19 @@
 - _[4.2 Hard Version](#hard-version)_
   - [4.2.1 Local setup with Docker](#local-setup-with-docker-recommended)
   - [4.2.2 Local setup on Kubernetes with Minikube](#local-setup-on-kubernetes-with-minikube-1)
-  - [4.2.1 Local setup by yourself (no Docker, no Minikube) (not recommended)](#local-setup-by-yourself-no-docker-no-minikube-not-recommended)
+  - [4.2.3 Local setup by yourself (no Docker, no Minikube) (not recommended)](#local-setup-by-yourself-no-docker-no-minikube-not-recommended)
     
 **[5. Cloud Setup](#cloud-setup)**
+
+**[6. Optional Setup]**
+
 
 # Introduction
 ## About us
 ### Teammates
 * Nguyen Minh Duc - [ducto489](https://github.com/ducto489) - Leader
 * To Thanh Dat - [tothanhdat2006](https://github.com/tothanhdat2006)
-* Nguyen Tien Son - [https://github.com/sotsuba](https://github.com/sotsuba) 
+* Nguyen Tien Son - [sotsuba](https://github.com/sotsuba) 
 ### Mentor
 * Ngo Hoang Bach - [BachNgoH](https://github.com/BachNgoH)
 ## Overview
@@ -107,9 +113,24 @@ curl -X 'POST' \
 
 ---
 # __Prerequisites__
+## __On-premises__
+### __Technical__
+- Python: v3.9
+- Docker Engine or Docker Desktop
+- Minikube
+- Git that can do pull push on remote repo.
 
-
-
+## __On Cloud__
+### __Technical__
+- Terraform: at least v1.11.x
+### __Non-technical__
+- An account on Google Cloud Platform that has attached any VISA/Mastercard credit.
+- Login to gcloud by using this command
+```bash
+gcloud auth login
+```
+- Make sure Kubenetes Engine is enabled. You can search for it in https://console.cloud.google.com
+![image](https://github.com/user-attachments/assets/11a5fe3d-f4ee-482b-aa26-10a9cd07c476)
 
 # Local Setup
 ## __Easy Version__
@@ -200,12 +221,15 @@ model-api-844bc97bf7-szswg   0/1     Running   0          9s  # -> which means t
 ```
 
 #### Step 4: Run the dashboard service
-When you run the below command line, it will automatically export the Local IP out of the Kubernetes Cluster, so that you machine can access to the website.
+When you run the below command line, it will automatically export the Local IP out of the Kubernetes Cluster, so that you machine can access to the website. 
+
+By default, The service website will be opened automatically.
+
 ```bash
 minikube service dashboard -n gdgaic
 ```
 
-#### Step 3: 
+https://github.com/user-attachments/assets/ca8f28f0-0f1f-4f7d-a791-3025ee6508e7
 
 ### __Local setup by yourself (no Docker, no Minikube) (not recommended)__
 
