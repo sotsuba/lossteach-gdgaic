@@ -1,19 +1,20 @@
 import logging
 import traceback
 import numpy as np
-import onnxruntime as ort
 import time
+import onnxruntime as ort
 import os
 import tempfile
-import cv2
+
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, File, Query, UploadFile, HTTPException
+from metrics import meter
 
 from routers.schema.predict_response import PredictResponse
 from routers.core.config import ModelConfig
-from routers.schema.fragment import Fragment
 
+#Utils
 from utils.image_processing import (
     analyze_fragment_sizes,
     calculate_mask_metrics,
@@ -21,10 +22,6 @@ from utils.image_processing import (
     conversion_func,
     preprocess_image,
 )
-
-# Import torch after other imports to avoid circular dependencies
-import torch  
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -47,24 +44,35 @@ router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "app" / "model-api" / "tmp"
 
+# ============= Metrics =============
+counter = meter.create_counter(
+    name="predict_counter",
+    description="Number of predict images processed"
+)
 
-
+histogram = meter.create_histogram(
+    name="predict_response_histogram",
+    description="Predict response histogram",
+    unit="seconds",
+)
+# ============= Main =============
 @router.post("/predict")
 async def predict(
     file: UploadFile = File(...), 
     score_threshold: float = Query(MODEL_CONFIG.scrore_threshold, ge=0.0, le=1.0),
-    include_mask: bool = Query(True, description="Include binary mask data in response"),
+    include_mask: bool = Query(False, description="Include binary mask data in response"),
     include_metrics: bool = Query(False, description="Include fragment metrics in response")
 ):
+    # Mark the starting point for the response
     start_time = time.time()
     temp_path: Optional[str] = None
-
+    logger.info("Sending POST /predict request!")
     try:
-        logger.info(f"Received prediction request for file: {file.filename}")
+        logger.debug(f"Received prediction request for file: {file.filename}")
 
         # Read file content
         contents = await file.read()
-        logger.info(f"Read {len(contents)} bytes from file")
+        logger.debug(f"Read {len(contents)} bytes from file")
 
         # Save file temporarily
         temp_path = save_temp_file(contents)
@@ -101,19 +109,32 @@ async def predict(
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
+        ending_time = time.time()
+        update_metrics({"api":"/predict"}, start_time, ending_time)
         # Clean up temporary file
         if temp_path and os.path.exists(temp_path):
             try:
                 os.unlink(temp_path)
-                logger.info(f"Cleaned up temporary file: {temp_path}")
+                logger.debug(f"Cleaned up temporary file: {temp_path}")
             except Exception as e:
                 logger.warning(f"Failed to clean up temporary file {temp_path}: {str(e)}")
+    
+def update_metrics(label: dict, starting_time, ending_time):
+        # Increase the counter
+        counter.add(1, label)
+        # Mark the end of the response
+        elapsed_time = ending_time - starting_time
 
+        # Add histogram
+        logger.info("elapsed time: ", elapsed_time)
+        logger.info(elapsed_time)
+        histogram.record(elapsed_time, label)
+    
 
 def prepare_image(contents: bytes) -> np.ndarray:
     # Preprocess image
     image_tensor = preprocess_image(contents)
-    logger.info(f"Preprocessed image shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
+    logger.debug(f"Preprocessed image shape: {image_tensor.shape}, dtype: {image_tensor.dtype}")
 
     # Validate input shape
     if not validate_input_shape(image_tensor):
@@ -213,17 +234,17 @@ def run_inference(image_tensor: np.ndarray,  start_time: float) -> tuple[np.ndar
     
     # Debug: Log the shape and content details of model outputs
     for i, out in enumerate(ort_outs):
-        logger.info(f"Model output {i} shape: {out.shape}, dtype: {out.dtype}")
+        logger.debug(f"Model output {i} shape: {out.shape}, dtype: {out.dtype}")
     
     # Important: The actual mask data is in ort_outs[3], not ort_outs[2]
     # ort_outs[2] contains scalar confidence values
     boxes, scores, mask_confidence = ort_outs[0], ort_outs[1], ort_outs[2]
     mask_probs = ort_outs[3]  # This contains the actual mask data
     
-    logger.info(f"Boxes shape: {boxes.shape}, dtype: {boxes.dtype}")
-    logger.info(f"Scores shape: {scores.shape}, dtype: {scores.dtype}")
-    logger.info(f"Mask confidence shape: {mask_confidence.shape}, dtype: {mask_confidence.dtype}")
-    logger.info(f"Mask probs shape: {mask_probs.shape}, dtype: {mask_probs.dtype}")
+    logger.debug(f"Boxes shape: {boxes.shape}, dtype: {boxes.dtype}")
+    logger.debug(f"Scores shape: {scores.shape}, dtype: {scores.dtype}")
+    logger.debug(f"Mask confidence shape: {mask_confidence.shape}, dtype: {mask_confidence.dtype}")
+    logger.debug(f"Mask probs shape: {mask_probs.shape}, dtype: {mask_probs.dtype}")
     
     # Check if we've exceeded the timeout
     if time.time() - start_time > MODEL_CONFIG.timeout:
@@ -240,56 +261,50 @@ def process_masks(boxes, scores, mask_probs, start_time, include_metrics=False):
         if time.time() - start_time > MODEL_CONFIG.timeout:
             raise TimeoutError("Mask processing took too long")
 
-        logger.info(f"Processing mask {i}")
+        logger.debug(f"Processing mask {i}")
 
-        # Handle different mask shapes - ensure it's 2D
-        if mask_prob.ndim == 3 and mask_prob.shape[0] == 1:  # If shape is [1, H, W]
-            mask_prob = mask_prob.squeeze(0)  # Convert to [H, W]
-        elif mask_prob.ndim == 3:  # If shape is [C, H, W] with C > 1
-            mask_prob = mask_prob[0]  # Take the first channel
-        
+        if mask_prob.ndim == 3:  # If shape is [1, H, W]
+            mask_prob = mask_prob.squeeze(0) if mask_prob.shape[0] == 1 else mask_prob[0]
         # Debug: Log mask probabilities
-        logger.info(f"Mask {i} shape: {mask_prob.shape}, min: {np.min(mask_prob)}, max: {np.max(mask_prob)}, mean: {np.mean(mask_prob)}")
-        
+        logger.debug(f"Mask {i} shape: {mask_prob.shape}, min: {np.min(mask_prob)}, max: {np.max(mask_prob)}, mean: {np.mean(mask_prob)}")
+
         # Show histogram of mask probability values (debug)
         unique_values, counts = np.unique(mask_prob, return_counts=True)
         if len(unique_values) < 20:  # Only log if there aren't too many unique values
-            logger.info(f"Mask {i} unique probability values: {unique_values}")
-            logger.info(f"Mask {i} probability value counts: {counts}")
+            logger.debug(f"Mask {i} unique probability values: {unique_values}")
+            logger.debug(f"Mask {i} probability value counts: {counts}")
         else:
-            logger.info(f"Mask {i} has {len(unique_values)} unique values")
+            logger.debug(f"Mask {i} has {len(unique_values)} unique values")
 
         # Convert box coordinates to integers and ensure they're within bounds
         x1, y1, x2, y2 = [int(coord) for coord in box]
         x1 = max(0, min(x1, 511))
         y1 = max(0, min(y1, 511))
-        x2 = max(0, min(x2, 511))            
+        x2 = max(0, min(x2, 511))
         y2 = max(0, min(y2, 511))
 
         # Threshold the mask probabilities to get binary mask
         binary_mask = (mask_prob > MASK_THRESHOLD).astype(np.uint8)
-        
-        # Debug: Log binary mask stats
-        logger.info(f"Binary mask {i} - min: {np.min(binary_mask)}, max: {np.max(binary_mask)}, mean: {np.mean(binary_mask)}")
+
+        logger.debug(f"Binary mask {i} - min: {np.min(binary_mask)}, max: {np.max(binary_mask)}, mean: {np.mean(binary_mask)}")
 
         # Calculate metrics only if requested
         metrics = None
         if include_metrics:
             metrics = calculate_mask_metrics(binary_mask)
-            logger.info(f"Mask {i} metrics: {metrics}")
+            logger.debug(f"Mask {i} metrics: {metrics}")
             mask_metrics_list.append(metrics)
         else:
             mask_metrics_list.append(None)
 
         processed_masks.append(binary_mask)
-
     return boxes, scores, processed_masks, mask_metrics_list
 
 def save_temp_file(contents: bytes) -> str:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
             temp_file.write(contents)
             temp_path = temp_file.name
-    logger.info(f"Saved file to {temp_path}")
+    logger.debug(f"Saved file to {temp_path}")
     return temp_path 
 
 def validate_input_shape(tensor: np.ndarray) -> bool:

@@ -3,8 +3,8 @@ import os
 import logging
 
 class ImageUploadUser(HttpUser):
-    host = "http://localhost:8000"  # Specify the host URL
-    wait_time = between(0.5, 1)
+    host = "http://localhost:5000"  # Specify the host URL
+    wait_time = between(2, 3)
     
     def on_start(self):
         """Initialize test data"""

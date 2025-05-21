@@ -1,7 +1,7 @@
 fastapi>=0.109.0
-uvicorn>=0.27.0
+uvicorn[standard]
 python-multipart>=0.0.9
-numpy>=1.24.0,<2.0.0
+numpy>=1.24.0,<2.0.0 
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.0.0+cpu
 torchvision==0.15.0+cpu
@@ -9,4 +9,14 @@ onnxruntime==1.15.1
 Pillow>=10.2.0
 python-dotenv>=1.0.0
 typing-extensions>=4.5.0
+
 opencv-python-headless>=4.8.0
+opentelemetry-api==1.19.0
+opentelemetry-sdk==1.19.0
+opentelemetry-instrumentation-asgi==0.40b0
+opentelemetry-instrumentation-fastapi==0.40b0
+opentelemetry-instrumentation-requests==0.40b0
+opentelemetry-instrumentation-logging==0.40b0
+opentelemetry-exporter-jaeger==1.19.0
+opentelemetry-exporter-otlp-proto-grpc==1.19.0
+opentelemetry-exporter-prometheus==1.12.0rc1

@@ -88,18 +88,6 @@ class DashboardApp:
             </ol>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Show sample images if available
-        if st.session_state.processed_images:
-            st.markdown("### 🖼️ Your uploaded images")
-            cols = st.columns(4)
-            for i, (filename, data) in enumerate(list(st.session_state.processed_images.items())[:4]):
-                with cols[i % 4]:
-                    st.image(data['file'], use_container_width=True, caption=filename)
-                    if st.button(f"Select {filename}", key=f"welcome_{filename}"):
-                        st.session_state.selected_image = filename
-                        st.rerun()
-    
     @retry(
         stop=stop_after_attempt(config.MAX_RETRIES),
         wait=wait_exponential(multiplier=config.INITIAL_RETRY_DELAY),

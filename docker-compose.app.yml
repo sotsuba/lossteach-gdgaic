@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   model-api:
     image: sotsuba/lossteach-gdgaic-model-api:latest
@@ -13,7 +11,7 @@ services:
       - gdgaic-network
     environment:
       - HOST=0.0.0.0
-      - PORT=8000
+      - PORT=5000
 
   dashboard:
     image: sotsuba/lossteach-gdgaic-dashboard:latest

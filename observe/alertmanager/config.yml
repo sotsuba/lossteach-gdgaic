@@ -1,0 +1,8 @@
+route:
+  repeat_interval: 15s # Time interval between consecutive notifications for the same alert
+  receiver: discord
+
+receivers:
+- name: discord
+  discord_configs:
+  - webhook_url: https://discord.com/api/webhooks/1374658943074308207/p3Ktvh0G9s77EiphMFe3kPBPXKLejgifCs_3v4B4-sTzHaCH8Iwq7McCR7D9gJxW74zH

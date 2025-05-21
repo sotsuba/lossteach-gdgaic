@@ -32,17 +32,7 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
             )
 
 # Create FastAPI app with optimized settings
-app = FastAPI(
-    title="Fragment Detection API",
-    description="API for detecting and analyzing fragments in images",
-    version="1.0.0",
-    openapi_url="/openapi.json",
-    default_response_class=JSONResponse,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Disable model expansion by default
-    swagger_ui_init_oauth={},  # Disable OAuth by default
-)
+app = FastAPI()
 
 # Add middleware
 app.add_middleware(TimeoutMiddleware)
@@ -64,7 +54,7 @@ app.include_router(
 async def health_check():
     return {"status": "healthy"}
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 5000))
     host = os.getenv("HOST", "0.0.0.0")
     uvicorn.run(
         "main:app",
