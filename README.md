@@ -1,7 +1,5 @@
 # Loss Teach GDGAIC: Blast Fragment Segmentation
-AH yes I will put something in here lol
-
-Still updating...
+Maximizing the efficiency of blasting operations in mining is crucial for optimizing resource extraction and minimizing costs. Ineffective blasts lead to oversized rocks requiring secondary breaking, increasing processing time and expenses. Conversely, excessive blasting produces too many small fragments, leading to material loss and environmental concerns. A system that automatically analyzes blast results and provides insights into fragmentation size would significantly benefit mining operations.
 # __Table of Contents__
 **[1. Introduction](#introduction)**
 - _[1.1 About us](#about-us)_
@@ -34,6 +32,7 @@ Still updating...
 
 # Introduction
 ## About us
+We are the GDGAIC-LossTeach team!
 ### Teammates
 * Nguyen Minh Duc - [ducto489](https://github.com/ducto489) - Leader
 * To Thanh Dat - [tothanhdat2006](https://github.com/tothanhdat2006)
@@ -41,10 +40,18 @@ Still updating...
 ### Mentor
 * Ngo Hoang Bach - [BachNgoH](https://github.com/BachNgoH)
 ## Overview
-Still updating...
-## Features
-Still updating...
+The problem of predicting the size of rock fragments can be considered as two sub-tasks:
 
+* Identify the individual rock fragments in the image using instance segmentation (a single type of rock may have multiple distinct fragments).
+
+* Use the identified masks to construct a CDF (Cumulative Distribution Function) plot.
+For the instance segmentation task, the model needs to predict the mask of each object within the same class and assign different IDs to each instance. In this project, we used the Mask R-CNN model due to its compact size and high efficiency. We employed the Mask R-CNN pre-trained on the COCO dataset from the PyTorch library. After training, the model achieved a mean Intersection over Union (mIoU) of 0.9080 on the validation set and 0.88651 on the private test set (late submission). You can check out for this Kaggle Competition [here](https://www.kaggle.com/competitions/gd-go-c-hcmus-aic-fragment-segmentation-track)
+
+
+## Features
+* A Machine Learning System that is scaleable, reproducible, observable. 
+* CDF visualization about Fragment Instances Size, meaningful information that can describe the result of blast segmentation.
+* The fragments' size was calculated by assumming 1 pixel of mask is equivalent to 3mm. Our solution still not the best but It does have room for improvement.
 ---
 # __Technical Details__
 ## __Repository’s structure__
@@ -283,7 +290,7 @@ make run_dashboard
 https://github.com/user-attachments/assets/25c17d4b-5bd3-4686-a967-acf5c965f582
 
 # Cloud Setup
-Still updating...
+Step 
 # Optional Setup 
 Still updating...
 ## __Jenkins for CI/CD__
