@@ -1,4 +1,5 @@
 import streamlit as st 
+
 st.set_page_config(
     page_title="Fragment Detection Dashboard",
     page_icon="🔍",
@@ -6,16 +7,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-import requests
 import logging
 import src.config as config
 import os
-from requests.exceptions import RequestException, ConnectionError
+from requests.exceptions import ConnectionError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.visualization import FragmentVisualizer, create_thumbnail
 from src.utils import process_image
 from src.helpers import check_api_health
+
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
